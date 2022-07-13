@@ -1,0 +1,27 @@
+name: Push-to-EC2
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+jobs:
+  ci:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v1
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: '3.220.46.251'
+          REMOTE_USER: 'ubuntu'
+          TARGET: '/home/ubuntu/'
+      - run: pwd
+      - run: ls
+      - name: Run build
+        run: |
+          sudo cp /home/ubuntu/env/.env ./
+          sudo docker stop launchpad || true
+          sudo docker rm $(sudo docker ps -a -q) || true
+          sudo docker rmi -f $(sudo docker images -a -q) || true
+          sudo docker build -t launchpad .
+          sudo docker run -d -p 8080:8080 --name launchpad launchpad
